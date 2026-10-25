@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="gate-bootstrap.js"></script>
+  <title>Extrato IA — Maestros da IA</title>
+  <meta name="description" content="Arraste o extrato do banco (OFX, CSV ou Excel) e receba os lançamentos categorizados, o DRE do mês, o fluxo de caixa, as assinaturas que se repetem e a planilha pronta para o contador.">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://gate.maestrosdaia.com">
+  <link rel="preload" href="https://gate.maestrosdaia.com/v1/membership-gate.js" as="script">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='4' fill='%23dfeae3'/%3E%3Crect x='3' y='8' width='26' height='16' rx='1.5' fill='%23f4f7f2' stroke='%230d5a4a' stroke-width='1.6'/%3E%3Cpath d='M6 13h11M6 17h7' stroke='%2313201b' stroke-width='1.4'/%3E%3Cpath d='M20 19.5c1.5-3 3-3 4.5-1' stroke='%230d5a4a' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+</head>
+<body>
+
+  <!-- ═══════════ MEMBERSHIP GATE ═══════════ -->
+  <div id="gate-screen" class="screen active">
+    <div class="vault">
+      <div class="gate-grid">
+        <section class="gate-intro">
+          <p class="eyebrow">Ferramenta para membros · Comunidade Maestros da IA</p>
+          <h1 class="gradient-text">Extrato IA</h1>
+          <p class="subtitle">Do extrato do banco ao fechamento do mês. Arraste o OFX, CSV ou Excel das suas contas e receba cada lançamento categorizado, o DRE da empresa, o fluxo de caixa, as assinaturas que se repetem e a planilha pronta para o contador.</p>
+          <ul class="gate-points">
+            <li><b>Nubank, Inter, Itaú, Bradesco, BB, Santander, Caixa, C6, Mercado Pago…</b> uma ou várias contas e a fatura do cartão.</li>
+            <li><b>Toda conta é feita aqui no navegador.</b> A IA só sugere a categoria de cada descrição nova — sem número de conta, CPF ou saldo.</li>
+            <li><b>Aprende com você.</b> Cada categoria vira regra: no mês seguinte, o que já é conhecido se categoriza sozinho.</li>
+          </ul>
+        </section>
+
+        <aside class="cheque gate-card" aria-labelledby="gate-title">
+          <div class="cheque-head">
+            <p class="cheque-bank">Banco dos Maestros<span>Agência 0001 · Comunidade</span></p>
+            <p class="cheque-no">Nº <span>000001</span></p>
+          </div>
+          <h2 class="cheque-title" id="gate-title">Pague-se o acesso ao <em>Extrato IA</em></h2>
+          <p class="community-badge">Exclusivo para membros da Comunidade Maestros da IA</p>
+
+          <form id="gate-form" class="gate-form" novalidate>
+            <div class="form-group">
+              <label for="gate-email">E-mail da sua compra</label>
+              <input type="email" id="gate-email" placeholder="seu@email.com" autocomplete="email">
+            </div>
+            <div class="form-group">
+              <label for="gate-phone">ou WhatsApp com DDD</label>
+              <input type="tel" id="gate-phone" placeholder="11999999999" autocomplete="tel">
+            </div>
+            <p class="form-hint">Basta um dos dois — o e-mail <em>ou</em> o WhatsApp usado na compra.</p>
+            <button type="submit" id="gate-submit" class="btn-primary btn-block">
+              <span class="btn-text">Verificar acesso</span>
+              <span class="btn-loading">Verificando...</span>
+            </button>
+            <p id="gate-error" class="error-message" role="alert"></p>
+            <p class="gate-checking"><span class="gate-checking-dot" aria-hidden="true"></span>Conferindo o seu acesso…</p>
+          </form>
+
+          <p class="gate-footer">Ainda não é membro? <a href="https://comunidade.maestrosdaia.com" target="_blank" rel="noopener noreferrer">Conheça a Comunidade Maestros da IA</a></p>
+          <p class="micr" aria-hidden="true">⑆ 0001 ⑆ 2026 ⑈ 000001 ⑈</p>
+        </aside>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ API KEY SETUP ═══════════ -->
+  <div id="key-screen" class="screen">
+    <div class="vault narrow">
+      <div class="slip key-card">
+        <p class="slip-kicker">Antes de abrir o extrato</p>
+        <h2 class="slip-title">Conecte sua chave de IA</h2>
+        <p class="lead-p">A ferramenta usa a <strong>sua própria chave</strong> (BYOK). Ela fica salva só neste navegador e nunca vai para os nossos servidores. Todas as contas são feitas aqui; a IA recebe <strong>só a descrição</strong> de cada lançamento novo para sugerir a categoria (sem número de conta, CPF ou saldo) e, no fechamento, <strong>só os totais do mês</strong>.</p>
+
+        <form id="key-inputs" class="key-inputs" novalidate></form>
+
+        <div class="field">
+          <label for="key-model-select">Modelo de IA</label>
+          <select id="key-model-select"></select>
+          <p class="field-note">Com uma chave da OpenRouter você escolhe entre Claude, GPT, Gemini, DeepSeek e os modelos em alta — tudo com a mesma chave. Categorizar um mês inteiro custa centavos.</p>
+        </div>
+
+        <div class="key-actions">
+          <button id="key-continue" class="btn-primary" disabled>Abrir o extrato</button>
+          <button id="key-skip" class="btn-secondary">Pular por enquanto</button>
+        </div>
+        <p class="field-note">Sem chave você importa, categoriza à mão e vê o DRE completo; a chave só é necessária para a categorização automática e para a análise escrita.</p>
+
+        <details class="key-info">
+          <summary>Como consigo uma chave da OpenRouter?</summary>
+          <div class="key-info-content">
+            <p>Crie uma conta em <code>openrouter.ai</code>, abra <code>openrouter.ai/keys</code> e clique em <em>Create Key</em>.</p>
+            <p>Adicione créditos (a partir de US$ 5) e cole a chave <code>sk-or-...</code> aqui.</p>
+          </div>
+        </details>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ MAIN APPLICATION ═══════════ -->
+  <div id="app-screen" class="screen">
+    <header class="app-header">
+      <div class="header-left">
+        <svg class="brandmark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="4" fill="#dfeae3"/><rect x="3" y="8" width="26" height="16" rx="1.5" fill="#f4f7f2" stroke="#0d5a4a" stroke-width="1.6"/><path d="M6 13h11M6 17h7" stroke="#13201b" stroke-width="1.4"/><path d="M20 19.5c1.5-3 3-3 4.5-1" stroke="#0d5a4a" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>
+        <div class="header-titles">
+          <p class="app-title">Extrato IA</p>
+          <span class="period-pill" id="period-pill" hidden></span>
+        </div>
+      </div>
+      <div class="header-right">
+        <a href="about.html" class="btn-icon" title="Sobre esta ferramenta" aria-label="Sobre esta ferramenta">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </a>
+        <button id="manage-keys-btn" class="btn-icon" title="Gerenciar chave de IA" aria-label="Gerenciar chave de IA">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+        </button>
+        <button id="logout-btn" class="btn-icon" title="Sair" aria-label="Sair">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <nav class="tabs" role="tablist" aria-label="Seções">
+      <button class="tab on" role="tab" id="tab-extratos" data-tab="extratos" aria-selected="true" aria-controls="pane-extratos"><span class="tab-n">1</span><span class="tab-t">Extratos</span></button>
+      <button class="tab" role="tab" id="tab-lancamentos" data-tab="lancamentos" aria-selected="false" aria-controls="pane-lancamentos"><span class="tab-n">2</span><span class="tab-t">Lançamentos</span><span class="tab-badge" id="tab-badge" hidden></span></button>
+      <button class="tab" role="tab" id="tab-painel" data-tab="painel" aria-selected="false" aria-controls="pane-painel"><span class="tab-n">3</span><span class="tab-t">DRE e painel</span></button>
+      <button class="tab" role="tab" id="tab-relatorio" data-tab="relatorio" aria-selected="false" aria-controls="pane-relatorio"><span class="tab-n">4</span><span class="tab-t">Fechamento</span></button>
+      <button class="tab tab-lib" role="tab" id="tab-arquivo" data-tab="arquivo" aria-selected="false" aria-controls="pane-arquivo"><span class="tab-n">≡</span><span class="tab-t">Meses e regras</span></button>
+    </nav>
+
+    <main class="app-main">
+
+      <!-- ── 1. EXTRATOS ── -->
+      <section class="pane on" id="pane-extratos" role="tabpanel" aria-labelledby="tab-extratos">
+        <div class="pane-head">
+          <p class="kicker">Passo 1</p>
+          <h2 class="pane-title">Traga os extratos do mês</h2>
+          <p class="pane-sub">Solte um ou vários arquivos: o extrato de cada conta e, se tiver, a fatura do cartão. O formato mais completo é o <b>OFX</b> (traz o saldo); CSV e Excel também funcionam.</p>
+        </div>
+
+        <div class="intake">
+          <div class="slip">
+            <label class="dropzone" id="dropzone" for="file-input">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="13" rx="1.5"/><path d="M5 10h8M5 13.5h5"/><path d="M15 15c1.2-2.2 2.4-2.2 3.6-.8"/><path d="M12 2v5M9.5 4.5L12 7l2.5-2.5"/></svg>
+              <span class="dz-main">Solte os extratos aqui ou clique para escolher</span>
+              <span class="dz-sub">.OFX · .CSV · .XLSX · vários de uma vez · até 8 arquivos por mês</span>
+            </label>
+            <input type="file" id="file-input" multiple accept=".ofx,.qfx,.csv,.tsv,.txt,.xlsx,.xls,text/csv,text/plain,application/x-ofx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" class="sr-only">
+            <details class="paste-box">
+              <summary>Prefere colar? Copie as linhas do extrato (com a linha de títulos) e cole aqui</summary>
+              <textarea id="in-paste" rows="6" maxlength="2000000" aria-label="Colar extrato" placeholder="Data	Descrição	Valor&#10;05/09/2026	Pix recebido - Cliente Fulano	1.200,00"></textarea>
+              <button type="button" class="btn-secondary" id="paste-load">Ler o extrato colado</button>
+            </details>
+          </div>
+          <div class="slip intake-side">
+            <h3 class="slip-h">Como exportar do banco</h3>
+            <ul class="howto">
+              <li><b>Nubank:</b> app → Conta → Extrato → ícone de compartilhar → <em>OFX</em>. Cartão: Fatura → Exportar → CSV.</li>
+              <li><b>Inter:</b> Extrato → Exportar → <em>OFX</em> ou CSV.</li>
+              <li><b>Itaú, Bradesco, BB, Santander, Caixa:</b> no internet banking, Extrato → Salvar em <em>OFX (Money)</em> ou Excel.</li>
+              <li><b>Mercado Pago, PagBank, C6:</b> Relatórios → Extrato da conta → CSV/Excel.</li>
+            </ul>
+            <p class="field-note">PDF não serve: ele não traz os dados de forma confiável. Se o banco só oferece PDF, procure “OFX”, “Money” ou “Excel” no internet banking do computador.</p>
+            <hr class="rule">
+            <button type="button" class="btn-secondary" id="example-btn">Carregar um mês de exemplo</button>
+            <p class="field-note">Conta PJ de um estúdio de vídeo (OFX do Nubank) + fatura do cartão (CSV).</p>
+          </div>
+        </div>
+        <p class="note warn" id="import-error" role="alert" hidden></p>
+
+        <div class="slip mapping" id="mapping" hidden>
+          <h3 class="slip-h" id="map-title">Colunas da planilha</h3>
+          <p class="field-note">Confira as amostras e corrija o que precisar. A prévia abaixo recalcula na hora.</p>
+          <div class="field-list" id="field-list"></div>
+          <label class="check"><input type="checkbox" id="map-invert"> <span>Valores positivos são <b>gastos</b> (fatura de cartão de crédito)</span></label>
+          <p class="map-preview" id="map-preview"></p>
+          <div class="pane-actions">
+            <button type="button" class="btn-ghost" id="map-cancel">Cancelar</button>
+            <button type="button" class="btn-primary" id="map-apply">Usar estas colunas</button>
+          </div>
+        </div>
+
+        <div id="accounts-wrap" hidden>
+          <div class="slip setup">
+            <div class="field">
+              <label for="in-nome">Nome deste mês</label>
+              <input type="text" id="in-nome" maxlength="100" placeholder="Ex.: Fechamento de setembro">
+            </div>
+            <fieldset class="field modo">
+              <legend>Estas contas são…</legend>
+              <label class="radio"><input type="radio" name="modo" value="misto" checked> <span>Empresa e pessoal (quero separar)</span></label>
+              <label class="radio"><input type="radio" name="modo" value="pj"> <span>Só da empresa</span></label>
+              <label class="radio"><input type="radio" name="modo" value="pf"> <span>Só pessoais</span></label>
+            </fieldset>
+            <div class="field wide">
+              <label for="in-negocio">O que o seu negócio faz? <span class="opt">(opcional — ajuda a IA a acertar)</span></label>
+              <textarea id="in-negocio" rows="2" maxlength="400" placeholder="Ex.: agência de social media com 3 freelas; vendo mentoria na Hotmart"></textarea>
+            </div>
+          </div>
+          <h3 class="section-h">Contas e cartões importados</h3>
+          <div class="accounts" id="accounts"></div>
+          <p class="note" id="dupe-note" hidden></p>
+          <div class="pane-actions">
+            <label class="dropzone mini" for="file-input">+ Adicionar outro extrato ou fatura</label>
+            <button type="button" class="btn-primary" id="to-lanc">Categorizar os lançamentos</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── 2. LANÇAMENTOS ── -->
+      <section class="pane" id="pane-lancamentos" role="tabpanel" aria-labelledby="tab-lancamentos">
+        <div class="empty" id="tx-empty">
+          <p class="empty-title">Nenhum lançamento ainda.</p>
+          <p>Importe o extrato do mês para categorizar.</p>
+          <button type="button" class="btn-secondary" data-goto="extratos">Ir para Extratos</button>
+        </div>
+        <div id="tx-wrap" hidden>
+          <div class="pane-head">
+            <p class="kicker">Passo 2</p>
+            <h2 class="pane-title">Cada lançamento no seu lugar</h2>
+          </div>
+          <div class="slip cat-ctl">
+            <div class="cat-ctl-row">
+              <button type="button" class="btn-primary" id="cat-ai">Categorizar com IA</button>
+              <button type="button" class="btn-ghost" id="cat-stop" hidden>Parar</button>
+              <p class="cat-progress" id="cat-progress" hidden></p>
+            </div>
+            <p class="field-note" id="cat-hint"></p>
+            <p class="note warn" id="cat-error" role="alert" hidden></p>
+          </div>
+
+          <div class="filters" role="group" aria-label="Filtrar lançamentos">
+            <button type="button" class="chip on" data-filter="todos" aria-pressed="true">Todos <span class="n"></span></button>
+            <button type="button" class="chip" data-filter="sem" aria-pressed="false">Sem categoria <span class="n"></span></button>
+            <button type="button" class="chip" data-filter="ia" aria-pressed="false">Pela IA <span class="n"></span></button>
+            <button type="button" class="chip" data-filter="voce" aria-pressed="false">Por você <span class="n"></span></button>
+            <button type="button" class="chip" data-filter="auto" aria-pressed="false">Automáticos <span class="n"></span></button>
+          </div>
+          <div class="filter-row">
+            <div class="field"><label for="f-q">Buscar</label><input type="search" id="f-q" placeholder="descrição ou categoria"></div>
+            <div class="field"><label for="f-acc">Conta</label><select id="f-acc"></select></div>
+            <div class="field"><label for="f-cat">Categoria</label><select id="f-cat"></select></div>
+          </div>
+          <label class="check apply-all"><input type="checkbox" id="apply-all" checked> <span>Ao mudar uma categoria, aplicar a <b>todos os lançamentos com a mesma descrição</b> e lembrar nos próximos meses</span></label>
+
+          <p class="tx-count" id="tx-count"></p>
+          <div class="ledger-wrap">
+            <table class="ledger tx">
+              <thead><tr><th scope="col">Dia</th><th scope="col">Descrição</th><th scope="col" class="num">Valor (R$)</th><th scope="col">Categoria</th><th scope="col">Quem decidiu</th></tr></thead>
+              <tbody id="tx-body"></tbody>
+            </table>
+          </div>
+          <button type="button" class="btn-secondary btn-block" id="tx-more" hidden></button>
+          <div class="pane-actions">
+            <button type="button" class="btn-primary" id="to-painel">Ver o DRE do mês</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── 3. PAINEL ── -->
+      <section class="pane" id="pane-painel" role="tabpanel" aria-labelledby="tab-painel">
+        <div class="empty" id="dash-empty">
+          <p class="empty-title">O DRE aparece depois da importação.</p>
+          <p>Importe o extrato e categorize os lançamentos.</p>
+          <button type="button" class="btn-secondary" data-goto="extratos">Ir para Extratos</button>
+        </div>
+        <div id="dash" hidden>
+          <div class="pane-head">
+            <p class="kicker">Passo 3 · somado lançamento a lançamento</p>
+            <h2 class="pane-title">DRE e painel do mês</h2>
+          </div>
+          <div class="ticker" id="ticker" aria-label="Números principais"></div>
+          <div class="cmp-bar">
+            <div class="field">
+              <label for="cmp-select">Comparar com</label>
+              <select id="cmp-select"></select>
+            </div>
+            <p class="field-note" id="cmp-note"></p>
+          </div>
+          <div id="dash-blocks"></div>
+          <div class="pane-actions">
+            <button type="button" class="btn-primary" data-goto="relatorio">Fechar o mês e baixar os arquivos</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── 4. FECHAMENTO ── -->
+      <section class="pane" id="pane-relatorio" role="tabpanel" aria-labelledby="tab-relatorio">
+        <div class="empty" id="report-empty">
+          <p class="empty-title">Ainda não há mês para fechar.</p>
+          <p>Importe o extrato primeiro.</p>
+          <button type="button" class="btn-secondary" data-goto="extratos">Ir para Extratos</button>
+        </div>
+        <div id="report-wrap" hidden>
+          <div class="slip report-ctl">
+            <div class="report-ctl-row">
+              <div class="report-ctl-text">
+                <p class="kicker">Passo 4</p>
+                <h3 class="slip-h">Fechamento escrito pela IA</h3>
+                <p class="field-note" id="report-hint">Leva de 15 a 60 segundos.</p>
+              </div>
+              <div class="field model-field">
+                <label for="model-select">Modelo de IA</label>
+                <select id="model-select"></select>
+              </div>
+              <div class="field model-field">
+                <label for="cmp-select-r">Comparar com</label>
+                <select id="cmp-select-r"></select>
+              </div>
+              <button type="button" class="btn-primary" id="summary-btn">Escrever a análise</button>
+            </div>
+            <p class="note" id="report-pending" hidden></p>
+            <p class="note warn" id="summary-error" role="alert" hidden></p>
+          </div>
+          <div class="export-bar">
+            <button type="button" class="btn-primary" id="dl-xlsx">Planilha para o contador (.xlsx)</button>
+            <button type="button" class="btn-secondary" id="dl-pdf">Salvar fechamento em PDF</button>
+            <button type="button" class="btn-secondary" id="dl-html">Baixar fechamento (.html)</button>
+            <button type="button" class="btn-secondary" id="dl-png">Resumo do mês (PNG)</button>
+            <button type="button" class="btn-secondary" id="dl-csv">Lançamentos (.csv)</button>
+          </div>
+          <article class="report" id="report"></article>
+        </div>
+      </section>
+
+      <!-- ── MESES E REGRAS ── -->
+      <section class="pane" id="pane-arquivo" role="tabpanel" aria-labelledby="tab-arquivo">
+        <div class="pane-head">
+          <p class="kicker">Arquivo</p>
+          <h2 class="pane-title">Meses salvos neste navegador</h2>
+          <p class="pane-sub">Cada mês fica guardado aqui, só neste navegador, para comparar e para reconhecer as assinaturas que se repetem.</p>
+        </div>
+        <div class="pane-actions left">
+          <button type="button" class="btn-primary" id="new-period">Começar um mês novo</button>
+        </div>
+        <div class="archive" id="archive"></div>
+
+        <div class="slip rules">
+          <h3 class="slip-h">Regras aprendidas</h3>
+          <p class="field-note" id="rules-count"></p>
+          <div class="rules-tools">
+            <div class="field"><label for="rules-q">Buscar regra</label><input type="search" id="rules-q" placeholder="ex.: uber, aluguel, hotmart"></div>
+            <button type="button" class="btn-secondary btn-sm" id="rules-export">Baixar backup das regras (.json)</button>
+            <label class="btn-secondary btn-sm file-btn" for="rules-file">Importar backup</label>
+            <input type="file" id="rules-file" accept=".json,application/json" class="sr-only">
+          </div>
+          <ul class="rules-list" id="rules-list"></ul>
+        </div>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <p>Extrato IA · <a href="https://comunidade.maestrosdaia.com" target="_blank" rel="noopener noreferrer">Comunidade Maestros da IA</a> · relatório gerencial, não substitui a contabilidade oficial</p>
+      <p class="footer-links"><a href="about.html">Sobre</a><a href="privacy-policy.html">Política de Privacidade</a><a href="data-deletion.html">Excluir meus dados</a><button type="button" class="link-btn" id="wipe-local">Apagar dados deste navegador</button></p>
+    </footer>
+  </div>
+
+  <!-- Gerenciar chave -->
+  <div id="key-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="key-modal-title">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="key-modal-title">Chave de IA</h3>
+        <button id="modal-close" class="btn-icon" type="button" aria-label="Fechar">×</button>
+      </div>
+      <form id="modal-key-inputs" class="key-inputs" novalidate></form>
+      <div class="field">
+        <label for="model-select-modal">Modelo de IA</label>
+        <select id="model-select-modal"></select>
+      </div>
+      <div class="modal-actions">
+        <button id="modal-clear" class="btn-ghost" type="button">Apagar chave</button>
+        <button id="modal-save" class="btn-primary" type="button">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="config.js"></script>
+  <script src="kill-switch.js"></script>
+  <script src="rate-limiter.js"></script>
+  <script src="https://gate.maestrosdaia.com/v1/membership-gate.js"></script>
+  <script src="api-key-manager.js"></script>
+  <script src="feedback-widget.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

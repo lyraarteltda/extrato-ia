@@ -1,0 +1,13 @@
+{
+  "name": "extrato-ia",
+  "version": "1.0.0",
+  "description": "Extrato bancário (OFX/CSV/XLSX) categorizado em lote com IA (BYOK) → DRE gerencial, fluxo de caixa, assinaturas e planilha para o contador",
+  "private": true,
+  "scripts": {
+    "dev": "npx serve .",
+    "lint": "echo 'No linter configured — static HTML project'"
+  },
+  "keywords": ["community-tool", "byok"],
+  "author": "APP-BUILDER-01",
+  "license": "UNLICENSED"
+}
